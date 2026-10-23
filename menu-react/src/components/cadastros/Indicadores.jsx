@@ -1,143 +1,161 @@
-import { useState } from 'react'
-
-function Indicadores() {
-  const [nome, setNome] = useState('')
-  const [email, setEmail] = useState('')
-  const [telefone, setTelefone] = useState('')
-  const [setor, setSetor] = useState('')
-
-  const [erros, setErros] = useState({})
-  const [mensagem, setMensagem] = useState('')
-
-  function salvar(event) {
-    event.preventDefault()
-
-    const novosErros = {}
-
-    if (nome.trim() === '') {
-      novosErros.nome = 'Informe o nome'
+import { useEffect, useState } from "react";
+import { indicadorService } from "../../services/indicadorService";
+const vazio = { Nome: "", Descricao: "", Url: "" };
+export default function Indicadores({ atualizarMenu }) {
+  const [itens, setItens] = useState([]);
+  const [form, setForm] = useState({ ...vazio });
+  const [idEdicao, setIdEdicao] = useState(null);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  async function carregar() {
+    try {
+      setCarregando(true);
+      const dados = await indicadorService.listar();
+      if (!Array.isArray(dados)) {
+        throw new Error("A API não retornou uma lista");
+      }
+      setItens(dados);
+      setErro("");
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setCarregando(false);
     }
-
-    if (email.trim() === '') {
-      novosErros.email = 'Informe o e-mail'
-    }
-
-    if (telefone.trim() === '') {
-      novosErros.telefone = 'Informe o telefone'
-    }
-
-    if (setor === '') {
-      novosErros.setor = 'Selecione o setor'
-    }
-
-    setErros(novosErros)
-
-    if (Object.keys(novosErros).length > 0) {
-      setMensagem('')
-      return
-    }
-
-    setMensagem('Indicador cadastrado com sucesso!')
   }
-
+  useEffect(() => {
+    carregar();
+  }, []);
+  function alterar(event) {
+    const { name, value } = event.target;
+    setForm((anterior) => ({ ...anterior, [name]: value }));
+  }
+  async function salvar(event) {
+    event.preventDefault();
+    try {
+      new URL(form.Url);
+      if (!/^https?:\/\//i.test(form.Url)) {
+        throw new Error("A URL deve começar com http:// ou https://");
+      }
+      if (idEdicao === null) {
+        await indicadorService.cadastrar(form);
+      } else {
+        await indicadorService.atualizar(idEdicao, {
+          Id: idEdicao,
+          ...form,
+        });
+      }
+      setForm({ ...vazio });
+      setIdEdicao(null);
+      await carregar();
+      await atualizarMenu();
+    } catch (e) {
+      setErro(e.message || "Falha ao salvar");
+    }
+  }
+  function editar(item) {
+    setIdEdicao(item.Id);
+    setForm({
+      Nome: item.Nome,
+      Descricao: item.Descricao,
+      Url: item.Url,
+    });
+  }
+  async function excluir(id) {
+    if (!window.confirm("Excluir este indicador?")) return;
+    try {
+      await indicadorService.excluir(id);
+      await carregar();
+      await atualizarMenu();
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
   return (
     <section className="p-4">
-      <h2 className="h4">Cadastro de Indicador</h2>
-
-      {mensagem && (
-        <div className="alert alert-success">
-          {mensagem}
-        </div>
-      )}
-
-      <form onSubmit={salvar}>
-        <div className="mb-3">
-          <label className="form-label">Nome</label>
-
-          <input
-            type="text"
-            className={`form-control ${
-              erros.nome ? 'is-invalid' : ''
-            }`}
-            value={nome}
-            onChange={(event) => setNome(event.target.value)}
-          />
-
-          {erros.nome && (
-            <div className="invalid-feedback">
-              {erros.nome}
-            </div>
+      <h2>Cadastro de Indicadores</h2>
+      {erro && <div className="alert alert-danger">{erro}</div>}
+      <form className="card card-body mb-4" onSubmit={salvar}>
+        <label className="form-label">Nome</label>
+        <input
+          name="Nome"
+          value={form.Nome}
+          onChange={alterar}
+          className="form-control mb-3"
+          required
+          maxLength={100}
+        />
+        <label className="form-label">Descrição</label>
+        <textarea
+          name="Descricao"
+          value={form.Descricao}
+          onChange={alterar}
+          className="form-control mb-3"
+        />
+        <label className="form-label">URL do indicador</label>
+        <input
+          name="Url"
+          type="url"
+          value={form.Url}
+          onChange={alterar}
+          className="form-control mb-3"
+          placeholder="https://..."
+          required
+        />
+        <div>
+          <button className="btn btn-primary me-2">
+            {idEdicao === null ? "Cadastrar" : "Salvar alterações"}
+          </button>
+          {idEdicao !== null && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setIdEdicao(null);
+                setForm({ ...vazio });
+              }}
+            >
+              Cancelar
+            </button>
           )}
         </div>
-
-        <div className="mb-3">
-          <label className="form-label">E-mail</label>
-
-          <input
-            type="email"
-            className={`form-control ${
-              erros.email ? 'is-invalid' : ''
-            }`}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-
-          {erros.email && (
-            <div className="invalid-feedback">
-              {erros.email}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Telefone</label>
-
-          <input
-            type="text"
-            className={`form-control ${
-              erros.telefone ? 'is-invalid' : ''
-            }`}
-            value={telefone}
-            onChange={(event) => setTelefone(event.target.value)}
-          />
-
-          {erros.telefone && (
-            <div className="invalid-feedback">
-              {erros.telefone}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Setor</label>
-
-          <select
-            className={`form-select ${
-              erros.setor ? 'is-invalid' : ''
-            }`}
-            value={setor}
-            onChange={(event) => setSetor(event.target.value)}
-          >
-            <option value="">Selecione</option>
-            <option value="Administrativo">Administrativo</option>
-            <option value="Produção">Produção</option>
-            <option value="Manutenção">Manutenção</option>
-            <option value="TI">TI</option>
-          </select>
-
-          {erros.setor && (
-            <div className="invalid-feedback">
-              {erros.setor}
-            </div>
-          )}
-        </div>
-
-        <button type="submit" className="btn btn-primary">
-          Cadastrar
-        </button>
       </form>
-    </section>
-  )
-}
+      {carregando && <p>Carregando...</p>}
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Descrição</th>
+              <th>URL</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {itens.map((item) => (
+              <tr key={item.Id}>
+                <td>{item.Nome}</td>
 
-export default Indicadores
+                <td>{item.Descricao}</td>
+                <td className="text-break">{item.Url}</td>
+                <td>
+                  <button
+                    className="btn btn-warning btn-sm me-2"
+                    onClick={() => editar(item)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => excluir(item.Id)}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
