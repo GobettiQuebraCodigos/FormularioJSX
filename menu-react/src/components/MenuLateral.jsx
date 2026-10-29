@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-function MenuLateral({ aberto, setTela, indicadores = [], selecionarIndicador }) {
+function MenuLateral({
+  aberto,
+  setTela,
+  indicadores = [],
+  selecionarIndicador,
+}) {
   const [cadastroAberto, setCadastroAberto] = useState(false);
 
   function alterarCadastro() {
@@ -50,7 +55,7 @@ function MenuLateral({ aberto, setTela, indicadores = [], selecionarIndicador })
 
             <button
               className="btn btn-sm btn-dark text-start"
-              onClick={() => setTela("medicao")}
+              onClick={() => setTela("medicoes")}
             >
               Medição
             </button>
@@ -64,14 +69,14 @@ function MenuLateral({ aberto, setTela, indicadores = [], selecionarIndicador })
 
             <button
               className="btn btn-sm btn-dark text-start"
-              onClick={() => setTela("unidadesMedidas")}
+              onClick={() => setTela("unidadesMedida")}
             >
               Unidades Medidas
             </button>
 
             <button
               className="btn btn-sm btn-dark text-start"
-              onClick={() => setTela("tipoInformacao")}
+              onClick={() => setTela("tiposInformacao")}
             >
               Tipo de Informação
             </button>
@@ -102,7 +107,9 @@ function MenuLateral({ aberto, setTela, indicadores = [], selecionarIndicador })
         {/* Submenu dinâmico de Indicadores (separado) */}
         {indicadores.length > 0 && (
           <div className="mt-3">
-            <h6 className="text-uppercase text-muted small mb-2">Indicadores</h6>
+            <h6 className="text-uppercase text-muted small mb-2">
+              Indicadores
+            </h6>
             <div className="d-grid gap-2">
               {indicadores.map((item) => (
                 <button
