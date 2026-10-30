@@ -1,3 +1,4 @@
+//Cadastros
 export const CADASTROS = {
   safras: {
     titulo: "Safras",
